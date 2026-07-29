@@ -55,7 +55,3 @@ if uploaded_file is not None:
         display_label = "No Tumor" if label == "notumor" else f"Tumor: {label}"
         st.write(f"{display_label}: {score*100:.2f}%")
         st.progress(float(score))
-    for label, score in zip(CLASS_LABELS, predictions):
-        display_label = "No Tumor" if label == "notumor" else f"Tumor: {label}"
-        st.write(f"{display_label}: {score*100:.2f}%")
-        st.progress(float(score))
