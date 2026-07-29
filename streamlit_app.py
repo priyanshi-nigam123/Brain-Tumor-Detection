@@ -1,9 +1,10 @@
+import io
 import numpy as np
 import streamlit as st
 from PIL import Image
 from huggingface_hub import hf_hub_download
 from tensorflow.keras.models import load_model
-from tensorflow.keras.preprocessing.image import img_to_array
+from tensorflow.keras.preprocessing.image import load_img, img_to_array
 
 # ---- Config (must match training) ----
 IMAGE_SIZE = 128
@@ -33,10 +34,15 @@ st.caption("⚠️ For educational/demo purposes only — not a medical diagnost
 uploaded_file = st.file_uploader("Upload MRI image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
-    image = Image.open(uploaded_file).convert("RGB")
-    st.image(image, caption="Uploaded MRI", use_container_width=True)
+    # Save to a temp path so we can use keras' load_img exactly like the notebook did
+    # (this avoids any resize-algorithm mismatch between PIL and keras)
+    temp_path = "temp_upload.png"
+    display_image = Image.open(uploaded_file).convert("RGB")
+    display_image.save(temp_path)
 
-    img = image.resize((IMAGE_SIZE, IMAGE_SIZE))
+    st.image(display_image, caption="Uploaded MRI", use_container_width=True)
+
+    img = load_img(temp_path, target_size=(IMAGE_SIZE, IMAGE_SIZE))
     img_array = img_to_array(img) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
 
