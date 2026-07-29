@@ -18,7 +18,7 @@ st.set_page_config(page_title="Brain Tumor MRI Classifier", page_icon="🧠")
 @st.cache_resource
 def get_model():
     model_path = hf_hub_download(repo_id=HF_REPO_ID, filename=HF_FILENAME)
-    return load_model(model_path)
+    return load_model(model_path, compile=False)
 
 
 model = get_model()
@@ -51,6 +51,10 @@ if uploaded_file is not None:
         st.error(f"**Tumor Detected: {predicted_label}** (Confidence: {confidence:.2f}%)")
 
     st.subheader("All class probabilities")
+    for label, score in zip(CLASS_LABELS, predictions):
+        display_label = "No Tumor" if label == "notumor" else f"Tumor: {label}"
+        st.write(f"{display_label}: {score*100:.2f}%")
+        st.progress(float(score))
     for label, score in zip(CLASS_LABELS, predictions):
         display_label = "No Tumor" if label == "notumor" else f"Tumor: {label}"
         st.write(f"{display_label}: {score*100:.2f}%")
