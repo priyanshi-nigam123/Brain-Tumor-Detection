@@ -1,0 +1,5 @@
+tensorflow-cpu==2.16.1
+streamlit
+numpy
+pillow
+huggingface_hub
