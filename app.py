@@ -171,9 +171,9 @@ with col1:
         label_visibility="collapsed"
     )
     if uploaded_file is not None:
-        image_to_predict = Image.open(uploaded_file)
+        image_to_predict = Image.open(uploaded_file).convert("RGB")
     elif selected_example is not None:
-        image_to_predict = Image.open(selected_example)
+        image_to_predict = Image.open(selected_example).convert("RGB")
 
     if image_to_predict is not None:
         st.image(image_to_predict, caption="Selected Scan", use_container_width=True)
