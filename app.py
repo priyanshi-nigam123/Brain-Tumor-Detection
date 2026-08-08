@@ -131,19 +131,23 @@ with st.sidebar:
     st.caption("Click a thumbnail to test the model without uploading your own image.")
 
     selected_example = None
+    valid_ext = (".jpg", ".jpeg", ".png")
     for cname in CLASS_NAMES:
         class_dir = os.path.join(EXAMPLE_DIR, cname)
         if os.path.isdir(class_dir):
-            files = sorted(os.listdir(class_dir))[:5]
+            files = [f for f in sorted(os.listdir(class_dir)) if f.lower().endswith(valid_ext)][:5]
             if files:
                 st.markdown(f"**{cname.capitalize()}**")
                 cols = st.columns(5)
                 for i, fname in enumerate(files):
                     fpath = os.path.join(class_dir, fname)
                     with cols[i]:
-                        if st.button("▫", key=f"{cname}_{i}", help=fname):
-                            selected_example = fpath
-                        st.image(fpath, use_container_width=True)
+                        try:
+                            if st.button("▫", key=f"{cname}_{i}", help=fname):
+                                selected_example = fpath
+                            st.image(fpath, use_container_width=True)
+                        except Exception:
+                            pass
 
 # ============================================================================
 # MAIN AREA
