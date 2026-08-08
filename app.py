@@ -169,7 +169,7 @@ with st.sidebar:
                         try:
                             if st.button("▫", key=f"{cname}_{i}", help=fname):
                                 selected_example = fpath
-                            st.image(fpath, width="stretch")
+                            st.image(fpath)
                         except Exception:
                             pass
 
@@ -203,9 +203,9 @@ with col1:
 
     if image_to_predict is not None:
         st.markdown('<div class="preview-card">', unsafe_allow_html=True)
-        st.image(image_to_predict, caption="Selected Scan", width="stretch")
+        st.image(image_to_predict, caption="Selected Scan")
         st.markdown('</div>', unsafe_allow_html=True)
-        run = st.button("✨ Analyze Scan", width="stretch")
+        run = st.button("✨ Analyze Scan")
     else:
         st.info("Upload an image above or select an example from the sidebar to begin.")
         run = False
