@@ -1,9 +1,16 @@
+import os
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["TF_NUM_INTEROP_THREADS"] = "1"
+os.environ["TF_NUM_INTRAOP_THREADS"] = "1"
 import streamlit as st
 import numpy as np
 from PIL import Image
 import tensorflow as tf
+tf.config.threading.set_intra_op_parallelism_threads(1)
+tf.config.threading.set_inter_op_parallelism_threads(1)
 from huggingface_hub import hf_hub_download
-import os
+import gc
 
 st.set_page_config(
     page_title="Brain Tumor Detection",
@@ -127,11 +134,12 @@ def preprocess_image(image: Image.Image):
     img_array = np.array(image) / 255.0
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
-
+    
 def predict(model, image: Image.Image):
     img_array = preprocess_image(image)
     preds = model.predict(img_array, verbose=0)[0]
     pred_idx = int(np.argmax(preds))
+    gc.collect()
     return CLASS_NAMES[pred_idx], preds
 
 def safe_open(path_or_file):
