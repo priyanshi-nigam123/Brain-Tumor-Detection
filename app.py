@@ -239,7 +239,3 @@ with col2:
         st.write("Prediction results will appear here after you analyze a scan.")
 
 st.markdown("---")
-st.caption(
-    "⚠️ This tool is for educational/demonstration purposes only and is not a "
-    "substitute for professional medical diagnosis."
-)
