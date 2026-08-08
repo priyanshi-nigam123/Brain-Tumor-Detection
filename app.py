@@ -207,6 +207,3 @@ st.caption(
     "⚠️ This tool is for educational/demonstration purposes only and is not a "
     "substitute for professional medical diagnosis."
 )
-        display_label = "No Tumor" if label == "notumor" else f"Tumor: {label}"
-        st.write(f"{display_label}: {score*100:.2f}%")
-        st.progress(float(score))
