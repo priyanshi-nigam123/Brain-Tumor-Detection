@@ -118,6 +118,20 @@ CLASS_COLORS = {
 
 EXAMPLE_DIR = "example_images"
 
+# ---------------------------------------------------------------------------
+# SESSION STATE — this is what makes the selected image (and result) persist
+# across Streamlit reruns (e.g. when the "Analyze Scan" button is clicked).
+# Without this, the previously selected example image was forgotten on the
+# next rerun, so the app looked like it produced no result.
+# ---------------------------------------------------------------------------
+if "current_image" not in st.session_state:
+    st.session_state.current_image = None
+if "current_source" not in st.session_state:
+    st.session_state.current_source = None
+if "last_uploaded_name" not in st.session_state:
+    st.session_state.last_uploaded_name = None
+
+
 @st.cache_resource
 def load_model():
     try:
@@ -128,13 +142,19 @@ def load_model():
         st.error(f"❌ Error loading model: {str(e)}")
         st.stop()
 
+
 def preprocess_image(image: Image.Image):
     image = image.convert("RGB")
     image = image.resize((IMAGE_SIZE, IMAGE_SIZE))
-    img_array = np.array(image) / 255.0
+    # NOTE: no /255.0 here. EfficientNetB0 normalizes internally, and the
+    # model was trained WITHOUT external rescaling. Dividing by 255 here
+    # would double-normalize the input and give wrong predictions/confidence
+    # (same bug that caused stuck training loss earlier).
+    img_array = np.array(image).astype("float32")
     img_array = np.expand_dims(img_array, axis=0)
     return img_array
-    
+
+
 def predict(model, image: Image.Image):
     img_array = preprocess_image(image)
     preds = model.predict(img_array, verbose=0)[0]
@@ -142,11 +162,16 @@ def predict(model, image: Image.Image):
     gc.collect()
     return CLASS_NAMES[pred_idx], preds
 
+
 def safe_open(path_or_file):
     img = Image.open(path_or_file)
     img.load()
     return img.convert("RGB")
 
+
+# ---------------------------------------------------------------------------
+# SIDEBAR
+# ---------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("### 🧠 About")
     st.write(
@@ -163,7 +188,6 @@ with st.sidebar:
     st.markdown("### 🖼️ Try an Example")
     st.caption("Click a thumbnail to test the model without uploading your own image.")
 
-    selected_example = None
     for cname in CLASS_NAMES:
         class_dir = os.path.join(EXAMPLE_DIR, cname)
         if os.path.isdir(class_dir):
@@ -176,11 +200,17 @@ with st.sidebar:
                     with cols[i]:
                         try:
                             if st.button("▫", key=f"{cname}_{i}", help=fname):
-                                selected_example = fpath
+                                # Save into session_state so it survives the
+                                # rerun triggered by clicking "Analyze Scan".
+                                st.session_state.current_image = safe_open(fpath)
+                                st.session_state.current_source = fname
                             st.image(fpath)
                         except Exception:
                             pass
 
+# ---------------------------------------------------------------------------
+# MAIN AREA
+# ---------------------------------------------------------------------------
 st.markdown('<div class="main-header">🧠 Brain Tumor Detection</div>', unsafe_allow_html=True)
 st.markdown(
     '<div class="sub-header">Upload a brain MRI scan or pick an example from the '
@@ -190,8 +220,6 @@ st.markdown(
 
 col1, col2 = st.columns([1, 1], gap="large")
 
-image_to_predict = None
-
 with col1:
     st.markdown('<div class="section-title">Upload MRI Scan</div>', unsafe_allow_html=True)
     uploaded_file = st.file_uploader(
@@ -200,18 +228,22 @@ with col1:
         label_visibility="collapsed"
     )
 
-    try:
-        if uploaded_file is not None:
-            image_to_predict = safe_open(uploaded_file)
-        elif selected_example is not None:
-            image_to_predict = safe_open(selected_example)
-    except Exception as e:
-        st.error(f"Couldn't read this image: {e}")
-        image_to_predict = None
+    # Only overwrite session_state when a genuinely NEW file is uploaded —
+    # otherwise every rerun (e.g. clicking Analyze) would keep re-reading it,
+    # which is harmless but this keeps behavior clean and predictable.
+    if uploaded_file is not None and uploaded_file.name != st.session_state.last_uploaded_name:
+        try:
+            st.session_state.current_image = safe_open(uploaded_file)
+            st.session_state.current_source = uploaded_file.name
+            st.session_state.last_uploaded_name = uploaded_file.name
+        except Exception as e:
+            st.error(f"Couldn't read this image: {e}")
+
+    image_to_predict = st.session_state.current_image
 
     if image_to_predict is not None:
         st.markdown('<div class="preview-card">', unsafe_allow_html=True)
-        st.image(image_to_predict, caption="Selected Scan")
+        st.image(image_to_predict, caption=st.session_state.current_source or "Selected Scan")
         st.markdown('</div>', unsafe_allow_html=True)
         run = st.button("✨ Analyze Scan")
     else:
@@ -245,5 +277,3 @@ with col2:
             st.progress(float(p))
     else:
         st.write("Prediction results will appear here after you analyze a scan.")
-
-st.markdown("---")
